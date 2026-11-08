@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this code or dataset, please cite both the software and the accompanying preprint."
+title: "The Half-Life of Peace: Multilingual Measurement of Public Attention Decay After Ceasefires, 2015-2025"
+type: software
+authors:
+  - family-names: Jaffar
+    given-names: Ahmed
+repository-code: "https://github.com/AhmedJaffar/half-life-of-peace"
+url: "https://github.com/AhmedJaffar/half-life-of-peace"
+license: MIT
+version: 0.1.0
+date-released: 2026-11-07
+keywords:
+  - peace and conflict studies
+  - ceasefire durability
+  - issue attention
+  - Wikipedia pageviews
+  - computational social science
+  - UCDP
+abstract: >-
+  Code and replication materials for a study measuring the Peace Attention
+  Half-Life (PAHL) of ceasefire announcements across 14 Wikipedia language
+  editions, and testing whether attention decay predicts ceasefire collapse.

@@ -1,0 +1,22 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Virtualenvs
+.venv/
+.venv2/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Raw downloaded data (large, reproducible via scripts/run_all.py)
+data/raw/
+data/processed/
+*.zip
+
+# Local scratch
+/tmp/
+*.log
