@@ -12,11 +12,15 @@ venv/
 .DS_Store
 Thumbs.db
 
-# Raw downloaded data (large, reproducible via scripts/run_all.py)
-data/raw/
-data/processed/
+# Raw and processed data: large and reproducible via `make data`.
+# Only the curated ceasefire table (data/events/) is version-controlled.
+data/*
+!data/events/
+!data/README.md
+
+# Archives
 *.zip
 
 # Local scratch
-/tmp/
 *.log
+tmp/
