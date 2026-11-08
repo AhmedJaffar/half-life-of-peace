@@ -24,7 +24,7 @@ figures:
 
 ## Build the manuscript PDF
 paper:
-	$(PY) scripts/run_all.py --stage paper
+	$(PY) scripts/build_pdf.py --in paper/manuscript.md --out paper/manuscript.pdf
 
 ## Verify every claim in the paper traces to analysis/results.json
 check:

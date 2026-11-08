@@ -1,0 +1,295 @@
+{
+  "dataset_name": "Half-Life of Peace - ceasefire and cessation-of-hostilities event table",
+  "version": "1.0",
+  "curator": "event-curator",
+  "project": "The Half-Life of Peace (peace-halflife)",
+  "retrieval_date": "2026-11-07",
+  "retrieval_date_note": "All source pages were opened and read on 2026-11-07 (local time America/Toronto). Dates recorded reflect what the cited page stated on that date.",
+  "files": {
+    "event_table": "data/events/ceasefires.csv",
+    "metadata": "data/events/ceasefires_metadata.json",
+    "method": "docs/events_method.md",
+    "superseded_raw_snapshot": "data/events/ceasefires.raw.csv"
+  },
+  "event_count": 36,
+  "verified_count": 36,
+  "schema": [
+    {
+      "field": "event_id",
+      "type": "string",
+      "description": "Stable slug identifier, unique within the table (e.g. minsk2_2015). Used as the join key by the analysis pipeline."
+    },
+    {
+      "field": "event_name",
+      "type": "string",
+      "description": "Short human-readable name of the agreement/pause as it is commonly described in reporting."
+    },
+    {
+      "field": "event_date",
+      "type": "date",
+      "description": "YYYY-MM-DD. The announcement, signature, or entry-into-force date that the cited source states, as described in notes."
+    },
+    {
+      "field": "country_iso3",
+      "type": "string",
+      "description": "ISO 3166-1 alpha-3 code of the primary theatre country. Multi-country events use the primary theatre; secondary countries are named in notes/actors."
+    },
+    {
+      "field": "conflict_name",
+      "type": "string",
+      "description": "Name of the conflict the agreement addresses (not necessarily a UCDP conflict name; see ucdp_join_note)."
+    },
+    {
+      "field": "actors",
+      "type": "string",
+      "description": "Semicolon-separated list of signing parties, guarantors and mediators."
+    },
+    {
+      "field": "agreement_type",
+      "type": "enum",
+      "description": "ceasefire | humanitarian_pause | peace_agreement | truce | de-escalation. Definitions in classification_scheme."
+    },
+    {
+      "field": "geographic_scope",
+      "type": "enum",
+      "description": "national | regional | subnational. Geographic reach of the commitment, not of the conflict."
+    },
+    {
+      "field": "headline_salience",
+      "type": "enum",
+      "description": "high | medium | low. Curator's ex-ante estimate of expected global media attention at announcement time. This is a design covariate, not a measured quantity."
+    },
+    {
+      "field": "source_url",
+      "type": "string",
+      "description": "One authoritative URL that states the recorded date. Preference order: UN (UN News, UNSMIL/UNMHA/OSESGY/OSESG-Syria, OCHA), OSCE, African Union, official government statements, wire services (AP/Reuters/BBC/Xinhua/TASS) where no institutional page was reachable."
+    },
+    {
+      "field": "verified",
+      "type": "boolean",
+      "description": "TRUE only where the curator personally opened the source page and read the sentence stating the recorded date. All 36 rows are TRUE."
+    },
+    {
+      "field": "ucdp_dyad_id",
+      "type": "string",
+      "description": "Reserved for UCDP dyad identifier. Intentionally left blank in this version - see ucdp_join_note."
+    },
+    {
+      "field": "ucdp_conflict_id",
+      "type": "string",
+      "description": "Reserved for UCDP conflict identifier. Intentionally left blank in this version - see ucdp_join_note."
+    },
+    {
+      "field": "notes",
+      "type": "string",
+      "description": "Free text: which date convention was used, contested-date ranges, implementation/outcome observations, secondary theatre countries."
+    }
+  ],
+  "inclusion_criteria": [
+    "Publicly announced ceasefire, truce, cessation of hostilities, humanitarian pause, de-escalation arrangement, or peace agreement containing a ceasefire, announced between 2015-01-01 and 2025-11-07.",
+    "At least one authoritative source page states the recorded date, and the curator opened that page and read the date.",
+    "The agreement is identifiable as a discrete event (a dated announcement, signature, or entry into force) rather than a standing negotiation process.",
+    "The event has enough international salience to be measurable in Wikipedia pageview data (i.e. likely to have an article in multiple language editions).",
+    "Preference for events whose theatre country is covered by UCDP GED so that the analyst can derive resumption/held outcomes."
+  ],
+  "exclusion_criteria": [
+    "Events outside the 2015-01-01 to 2025-11-07 window (e.g. Israel-Hamas 2012 and 2014 ceasefires used only as out-of-window controls).",
+    "Events where no reached source stated the date unambiguously and the date could not be pinned without guessing.",
+    "Routine, low-salience local truces (hundreds per year) that would not appear in global attention data.",
+    "Unilateral declarations that were repudiated by the declaring party within days and never functioned as a cessation of hostilities.",
+    "Non-ceasefire agreements (e.g. grain-corridor or prisoner-exchange deals) without a cessation-of-hostilities component."
+  ],
+  "classification_scheme": {
+    "agreement_type": {
+      "ceasefire": "Bilateral or multilateral commitment to stop military operations, typically with a stated effective time and defined geographic theatre.",
+      "humanitarian_pause": "Temporary, time-limited suspension of hostilities framed around humanitarian access or hostage/prisoner release, usually days in length.",
+      "peace_agreement": "Broader signed settlement that includes a ceasefire plus political, security or power-sharing provisions.",
+      "truce": "Short-duration, often renewable suspension (e.g. a two-month truce with extension options).",
+      "de-escalation": "Arrangement to freeze front lines or create zones/withdrawal areas without a full ceasefire declaration."
+    },
+    "geographic_scope": {
+      "national": "Commitment nominally covers the whole country.",
+      "regional": "Commitment covers a cross-border theatre involving two or more states.",
+      "subnational": "Commitment covers a named subnational area (province, governorate, enclave, de-escalation zone)."
+    },
+    "headline_salience": {
+      "high": "Expected front-page/global lead coverage at announcement.",
+      "medium": "Sustained international coverage but not a global lead story.",
+      "low": "Expert/regional coverage only."
+    }
+  },
+  "date_conventions": {
+    "preference_order": "1) entry-into-force date where the source states one; 2) signature/announcement date where no separate effective time is stated; 3) agreement/conclusion date where the source only states that.",
+    "rule": "Every row's notes state which convention was used. Where signature and entry into force differ by more than two days, both are recorded (date column one of them, the other in notes).",
+    "contested_dates": [
+      {
+        "event_id": "minsk2_2015",
+        "recorded": "2015-02-15",
+        "range": "2015-02-12 to 2015-02-15",
+        "note": "Package agreed in Minsk 12 Feb; ceasefire effective 15 Feb. Entry into force used."
+      },
+      {
+        "event_id": "car_2019",
+        "recorded": "2019-02-05",
+        "range": "2019-02-05 to 2019-02-06",
+        "note": "Initialled in Khartoum 5 Feb; formally signed in Bangui 6 Feb. Initialling used."
+      },
+      {
+        "event_id": "sudan_juba_2020",
+        "recorded": "2020-08-31",
+        "range": "2020-08-31 to 2020-10-03",
+        "note": "Initialled 31 Aug 2020; formal signing 3 Oct 2020. Initialling used."
+      },
+      {
+        "event_id": "yemen_stockholm_2018",
+        "recorded": "2018-12-13",
+        "range": "2018-12-13 to 2018-12-18",
+        "note": "Agreement concluded 13 Dec; Hudaydah ceasefire effective 18 Dec. Agreement date used because the cited page states it."
+      },
+      {
+        "event_id": "sudan_jeddah_2023",
+        "recorded": "2023-05-20",
+        "range": "2023-05-20 to 2023-05-22",
+        "note": "Signed 20 May; entered into force 22 May. Signing date used."
+      },
+      {
+        "event_id": "mali_2015",
+        "recorded": "2015-06-20",
+        "range": "2015-05-15 to 2015-06-20",
+        "note": "Government and Platform signed 15 May; Coordination signed 20 Jun, completing signatures. Full-signature date used."
+      }
+    ]
+  },
+  "verification_method": "For every row the curator (i) located a candidate page via web search, (ii) fetched the page and extracted its body text, (iii) confirmed a sentence stating the recorded date, and (iv) pasted that date context into the row notes. No date was accepted from a search-result snippet alone. Rows whose only available page did not state the date were dropped rather than marked verified.",
+  "coverage": {
+    "years": {
+      "2015": 5,
+      "2016": 5,
+      "2017": 2,
+      "2018": 3,
+      "2019": 1,
+      "2020": 6,
+      "2021": 2,
+      "2022": 3,
+      "2023": 3,
+      "2024": 2,
+      "2025": 4
+    },
+    "countries_iso3": [
+      "AFG",
+      "AZE",
+      "CAF",
+      "COD",
+      "COL",
+      "ETH",
+      "ISR",
+      "LBN",
+      "LBY",
+      "MLI",
+      "MMR",
+      "PAK",
+      "PHL",
+      "PSE",
+      "SDN",
+      "SSD",
+      "SYR",
+      "THA",
+      "UKR",
+      "YEM"
+    ],
+    "country_count": 20,
+    "regions": {
+      "Europe and Central Asia": [
+        "UKR",
+        "AZE"
+      ],
+      "Middle East and North Africa": [
+        "SYR",
+        "YEM",
+        "PSE",
+        "LBN",
+        "LBY",
+        "ISR"
+      ],
+      "Sub-Saharan Africa": [
+        "SDN",
+        "SSD",
+        "CAF",
+        "MLI",
+        "ETH",
+        "COD"
+      ],
+      "South Asia": [
+        "AFG",
+        "PAK"
+      ],
+      "Southeast and East Asia": [
+        "THA",
+        "PHL",
+        "MMR"
+      ],
+      "Latin America": [
+        "COL"
+      ]
+    },
+    "agreement_type_counts": {
+      "ceasefire": 24,
+      "de-escalation": 2,
+      "humanitarian_pause": 2,
+      "peace_agreement": 7,
+      "truce": 1
+    },
+    "headline_salience_counts": {
+      "high": 18,
+      "low": 5,
+      "medium": 13
+    }
+  },
+  "balance_note": "The sample deliberately mixes agreements that held, eroded, and collapsed so that the prediction analysis has both outcome classes. The curator's rough expectation, recorded only in notes, is: held through 12 months (approx. 11 events, e.g. ethiopia_2022, libya_2020, nk_2020, gaza_2021, israel_lebanon_2024, india_pak_2021, colombia_farc_2016, israel_iran_2025); partially implemented or eroded (approx. 15, e.g. minsk2_2015, syria_astana_2016, car_2019, mali_2015, myanmar_nca_2015); collapsed outright (approx. 10, e.g. syria_coh_2016, yemen_kuwait_2016, southsudan_2015, gaza_pause_2023, sudan_jeddah_2023, philippines_2016, drc_rwanda_2024). These are NOT the analytic outcome variable: held_12m must be derived by the analyst from UCDP GED monthly fatalities using the pre-registered threshold.",
+  "ucdp_join_note": "ucdp_dyad_id and ucdp_conflict_id are intentionally blank rather than guessed. Numeric UCDP identifiers were not verified against UCDP's own register within this task, and a fabricated id would silently corrupt the join. Recommended join: UCDP GED v24.1 country_id/conflict_new_id on (country_iso3, conflict_name, event_date +/- window), with manual review of the dyad for multi-party theatres (SYR, YEM, SDN, SSD, LBY, COD, MMR, PSE).",
+  "known_limitations": [
+    "Curation judgment enters at the boundary of what counts as one event; the same conflict can generate several rows (e.g. Syria has five, Colombia one) so cross-conflict comparisons should weight by conflict, not by row.",
+    "Three rows rely on wire-service or state-agency pages because the institutional page was unreachable at retrieval time: ukr_sept2015 and gaza_2021 (TASS), ukr_easter2018, syria_desc_2017, gaza_2025, india_pak_2025, sudan_jeddah_2023 (Xinhua). Dates were still read on the page.",
+    "English-language sources dominate; non-English primary documents (e.g. Arabic UN News for israel_iran_2025, Portuguese-language Angolan public broadcaster for drc_rwanda_2024, Burmese-language ministry site for myanmar_nca_2015) were accepted where they are the authoritative record.",
+    "headline_salience is an ex-ante judgment and should be treated as a covariate with measurement error, not as data.",
+    "Some entry-into-force times are stated in local time and fall near midnight, so the calendar date of first effect can differ by one day from the date in some reporting.",
+    "The table is not a census of ceasefires, and absence of an event from the table is not evidence that no ceasefire occurred."
+  ],
+  "provenance_notes": [
+    "Retrieved and verified 2026-11-07.",
+    "The first serialisation of ceasefires.csv (written 2026-11-07 21:46 by the curator) contained unescaped commas in the notes field, so only part of the file parsed as 14-column CSV. The Lead re-serialised the file with Python's csv module; that repaired file is the authoritative version here (31 rows at the time of repair).",
+    "A byte-for-byte snapshot of the pre-repair file is preserved as data/events/ceasefires.raw.csv for audit; it must not be used for analysis.",
+    "After repair, five further verified events (syria_coh_2016, libya_ceasefire_2020, ethiopia_2022, myanmar_nca_2015, israel_iran_2025) were appended with the csv module and the table re-sorted by event_date, giving 36 rows.",
+    "Validation performed after the final write: 36 rows x 14 columns, no duplicate event_id, all event_date values parse as YYYY-MM-DD, all country_iso3 values are valid ISO 3166-1 alpha-3 codes, all agreement_type/geographic_scope/headline_salience values are within the allowed enums, verified == TRUE for all rows."
+  ],
+  "deliberately_excluded": [
+    {
+      "event": "Israel-Hamas ceasefires of 2012 and 2014",
+      "reason": "Outside the 2015-2025 window; reserved as out-of-window controls if the analyst wants them."
+    },
+    {
+      "event": "Myanmar China-mediated ceasefire in northern Shan State (Dec 2023 / Jan 2024)",
+      "reason": "Reporting gives at least two candidate dates (a 14 Dec 2023 MNDAA unilateral truce and an 11 Jan 2024 China-brokered ceasefire); could not pin one authoritative date within budget."
+    },
+    {
+      "event": "Afghanistan Eid ceasefire, June 2018",
+      "reason": "Two distinct start dates (government truce from 12 June, Taliban truce from 15 June) and the reached page only confirms a ceasefire was in effect on 15 June; the three-day Eid ceasefire of May 2020 is included instead."
+    },
+    {
+      "event": "Colombia ELN bilateral ceasefire, 2023-08-03",
+      "reason": "The official Presidency page repeatedly timed out during retrieval; date was not read on a page, so the event was dropped rather than guessed. Colombia is represented by colombia_farc_2016."
+    },
+    {
+      "event": "Philippines second unilateral ceasefire (21 Aug 2016)",
+      "reason": "Same conflict and same mechanism as philippines_2016; kept one row to avoid double-counting attention for a single news cycle."
+    },
+    {
+      "event": "Yemen 48/72-hour humanitarian pauses, 2016",
+      "reason": "Several short pauses with overlapping and inconsistently reported dates; only the April 2016 cessation of hostilities is included."
+    },
+    {
+      "event": "Ukraine Orthodox Christmas unilateral truce, January 2023",
+      "reason": "Unilateral, 36-hour, widely dismissed at the time; too short for the attention-decay design."
+    }
+  ]
+}

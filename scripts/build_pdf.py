@@ -284,6 +284,21 @@ def make_image(path: Path, alt: str) -> list:
     return flows
 
 
+def strip_front_matter(md: str):
+    """Return (meta dict, body markdown) and drop a leading YAML block."""
+    meta: dict = {}
+    lines = md.splitlines()
+    if lines and lines[0].strip() == "---":
+        for idx in range(1, len(lines)):
+            if lines[idx].strip() == "---":
+                for raw in lines[1:idx]:
+                    if ":" in raw and not raw.strip().startswith("-"):
+                        k, v = raw.split(":", 1)
+                        meta[k.strip().lower()] = v.strip().strip('"').strip("'")
+                return meta, "\n".join(lines[idx + 1:])
+    return meta, md
+
+
 def parse_markdown(md: str, base_dir: Path):
     """Return (title, subtitle_lines, blocks) where blocks are rendered later."""
     lines = md.splitlines()
@@ -480,6 +495,11 @@ class Manuscript(BaseDocTemplate):
             **kw,
         )
         self.short_title = title[:64] if title else ""
+        if title:
+            base = title.split(":")[0].strip()
+            if len(base) > 64:
+                base = base[:61].rstrip() + "..."
+            self.short_title = base
         frame = Frame(MARGIN, MARGIN, CONTENT_W, PAGE_H - 2 * MARGIN - 6 * mm, id="body")
         self.addPageTemplates([
             PageTemplate(id="title", frames=[frame], onPage=self._title_page),
@@ -592,7 +612,11 @@ def main() -> int:
     register_fonts()
     build_styles()
     md = in_path.read_text(encoding="utf-8")
-    title, blocks = parse_markdown(md, in_path.parent)
+    meta, body_md = strip_front_matter(md)
+    title, blocks = parse_markdown(body_md, in_path.parent)
+    title = meta.get("title") or title
+    subtitle = meta.get("subtitle")
+    author = meta.get("author") or args.author
 
     story = []
     story.append(Spacer(1, 34 * mm))
@@ -600,13 +624,15 @@ def main() -> int:
         '<font size="8.5" color="#12395c">RESEARCH PREPRINT</font>', STYLES["meta"]))
     story.append(Spacer(1, 4 * mm))
     story.append(Paragraph(inline(title or in_path.stem), STYLES["title"]))
-    if blocks and blocks[0][0] == "p":
+    if subtitle:
+        story.append(Paragraph(inline(subtitle), STYLES["subtitle"]))
+    elif blocks and blocks[0][0] == "p":
         story.append(Paragraph(inline(blocks[0][1]), STYLES["subtitle"]))
         blocks = blocks[1:]
     story.append(Spacer(1, 10 * mm))
     story.append(HRFlowable(width="35%", thickness=1, color=ACCENT, hAlign="LEFT"))
     story.append(Spacer(1, 8 * mm))
-    story.append(Paragraph(f"<b>{esc(args.author)}</b>", STYLES["meta"]))
+    story.append(Paragraph(f"<b>{esc(author)}</b>", STYLES["meta"]))
     story.append(Spacer(1, 2 * mm))
     story.append(Paragraph("November 2026", STYLES["meta"]))
     story.append(Paragraph(f"Code &amp; data: {esc(args.repo)}", STYLES["meta"]))
