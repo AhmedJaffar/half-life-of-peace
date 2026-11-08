@@ -236,3 +236,19 @@ These were named in the project brief or surfaced during searching but could not
 - **Lehmann et al. on Wikipedia and influenza.** Frequently mis-cited. The Wikipedia flu-surveillance paper is **McIver and Brownstein (2014)**, not Lehmann et al.; it is cited correctly in Section 3. (Lehmann et al. 2012 is a different paper, on Twitter attention dynamics.)
 - **Downs (1972) original PDF.** The original appeared in *The Public Interest* 28: 38–50, which has no stable DOI. The URL given is the verified Routledge reprint chapter (2016), and the entry says so. If a direct original is required, obtain it from a library archive rather than an unverified PDF.
 - **Exact page ranges** for a small number of entries (marked by volume/issue only, e.g. Hultman and Mousa 2025; Clayton et al. 2022) are from the publisher record and may need a final check against the printed version.
+
+---
+
+## Addendum: post-review correction (2026-11-07, after adversarial review)
+
+One negative claim in §4.2 and §5 was too strong and is retracted here for the record.
+**"Zero studies using Wikipedia page views for conflict attention" is false.** Oswald, C. and
+Ohrenhofer, D. (2022), "Click, click boom: Using Wikipedia data to predict changes in
+battle-related deaths", *International Interactions* 48(4): 678-696,
+doi:10.1080/03050629.2022.2061969, uses Wikipedia data in a conflict-forecasting setting.
+
+The novelty claim is therefore narrowed, not withdrawn: what is new is (i) an attention
+*rate* (a half-life) estimated for ceasefire announcements, (ii) that rate used as an ex-ante
+predictor, and (iii) the cross-lingual War-Peace Attention Ratio. The use of Wikipedia as a
+conflict sensor is prior art and is now cited as such in the manuscript (§2 "What is new, and
+what is not").

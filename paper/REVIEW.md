@@ -517,3 +517,54 @@ than the early-warning paper the abstract currently promises.
 
 *This review was written from the frozen inputs and analysis outputs at 2026-11-08T03:08Z; the manuscript was
 last modified 2026-11-07T21:59 local and still contained no Results/Discussion at review cutoff.*
+
+---
+
+## Addendum: re-audit of the final manuscript (2026-11-07 late)
+
+*Supersedes the tags above; re-audited against the final `paper/manuscript.md` (sha256 `5380763…`, 0 `[TK]`) and
+`analysis/results.json`/`report.md`.*
+
+**1. Is it submittable now? Yes, after the fixes below.**
+- **A1 (decay placebo): YES, remediated.** The abstract, §5.4, §5.6, §6, §7 and §8 all report the null
+  (p = 0.926 / 0.156; 0 of 24 events) and no text claims event-specific decay. One residue: the abstract says
+  "estimate it for 36 verified ceasefires" — change to **"for 24 of 36"** (only 24 estimates exist).
+- **A2 (window sensitivity): YES, adequately disclosed** (§4.4, §5.7, §7: 15.7 / 41.8 / 173.5 days at
+  30 / 90 / 270 days; 5.5 days crossing; rank correlations 0.59 / 0.35). Add "under the 90-day censoring
+  window" to the abstract's 41.8; drop "lower bound" from the Figure 2 caption.
+- **B1 (FDR / survival null): YES** — 0 of 10 tests after BH, Cox null, n = 23 with 5 non-resumptions all reported.
+- **B2 (50% threshold): YES** — the attenuation is reported in Results, Discussion and Limitations.
+- **B7 (war/peace falsification): YES for disclosure** — §4.8/§5.3 state the condition is met. But delete or
+  qualify the Discussion sentence *"War attracts more attention and sheds it faster; peace attracts less and
+  keeps it longer"*: the paper's own paired difference is 0.0 days (CI −14.7 to 6.2), i.e. no distinguishable
+  difference. Also delete "with the same covariates" and "a proportional-hazards check" from the Cox paragraph —
+  the model is single-covariate and no PH check was run.
+
+**2. B4 worst offenders** (event_id → current article → should be):
+- `india_pak_2025` → "Insurgency in Khyber Pakhtunkhwa" → **"2025 India–Pakistan conflict"** (or "Kashmir
+  conflict"). This is the only wrong-conflict mapping that contributes a PAHL (31.3 d). Fix or drop.
+- `philippines_2016` → "Philippine drug war" → **"Communist rebellion in the Philippines"** (excluded from
+  PAHL; fix or drop).
+- `myanmar_nca_2015` → "Myanmar civil war (2021–present)" → **"Internal conflict in Myanmar"** (excluded; the
+  2021 article post-dates the 2015 event).
+- `gaza_2021`, `gaza_2022` → "Gaza war" → **"2021 Israel–Palestine crisis"**, **"2022 Gaza–Israel clashes"**.
+  "Gaza war" was a low-traffic redirect then (English = 431 views in May 2021); remap or drop these two.
+- `israel_iran_2025`, `thai_camb_2025` → unmapped → "Israel–Iran conflict (2025)", "Cambodian–Thai border
+  dispute"; both currently contribute no PAHL.
+
+**3. B10 — the four BibTeX entries:** `@book{jones2005}` (`paper/references.bib:678`), `@book{baumgartner1993}`
+(:686), `@book{fortna2008}` (:694), `@book{moeller1999}` (:702) each lack the comma after `year = {...}` before
+`url = {...}`. Fix: `year = {2005},` etc. — four one-character edits.
+
+**4. B5 — single most damaging uncited paper:** **Oswald, C. & Ohrenhofer, D. (2022), "Click, click boom: Using
+Wikipedia data to predict changes in battle-related deaths", *International Interactions* 48(4),
+doi:10.1080/03050629.2022.2061969.** It uses Wikipedia pageviews as a conflict-salience measure to predict battle
+deaths, directly contradicting "What pageviews have not been used for … is attention to armed conflict"
+(ms ~line 135) and "which to our knowledge has not been done" (~line 149). Cite it and narrow the claim.
+
+**5. Residual risk (one sentence):** the **resumption outcome** — its 12-month post window starts in the event
+month and uses country-level totals, so Gaza 2021/2022, Colombia 2016 and India–Pakistan 2021 are demonstrably coded "resumed" from
+pre-ceasefire or other-conflict violence; re-coding those four events drops OR from 5.32 to 2.40 and CV AUC
+from 0.775 to 0.634. Secondarily, the spike subsection's claim that a near-zero correlation "rules out
+regression to the mean" is unsupported: it is computed on observed events, not placebo draws, and its CI
+spans −0.43.

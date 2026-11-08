@@ -46,7 +46,7 @@ The decay estimator is **not ours** — it is the collective-attention framework
 it is adopted from Clayton & Sticher (2021, *ISQ*), who model ceasefire survival on UCDP GED deaths.
 What is new is (a) estimating an attention half-life for ceasefire announcements at all, (b) testing
 the decay *rate* — not the level — as an ex-ante predictor, (c) the cross-lingual War–Peace Attention
-Ratio, and (d) the first use of Wikipedia pageviews for conflict attention. See
+Ratio, and (d) a cross-lingual attention *rate* for conflict, built on pageviews. The data source is not new — Oswald & Ohrenhofer (2022) already used Wikipedia to forecast battle deaths — so the claim is the rate construct and its multilingual deployment, not the sensor. See
 [`paper/related_work.md`](paper/related_work.md) for the verified gap analysis and
 [`paper/gap_risks.md`](paper/gap_risks.md) for the objections we expect.
 

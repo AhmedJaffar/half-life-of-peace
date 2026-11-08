@@ -22,7 +22,7 @@ international peace processes.
 framework (Candia et al. 2019) to ceasefire announcements. We define the Peace
 Attention Half-Life (PAHL), the number of days for attention in excess of a
 pre-event baseline to fall to half of its post-announcement peak, and estimate it
-for 36 verified ceasefires announced between 2015 and 2025 using daily Wikipedia
+for 24 of the 36 verified ceasefires announced between 2015 and 2025 using daily Wikipedia
 pageviews across 14 language editions. We adopt the violence-based outcome logic of the ceasefire-survival literature
 (Clayton and Sticher 2021), code resumption from UCDP Georeferenced Event
 Dataset fatalities, test both the announcement spike and the decay rate against
@@ -419,8 +419,11 @@ decay literature has assigned to it. Third, a cross-lingual War-Peace Attention
 Ratio: no prior work constructs a war-versus-peace attention contrast at all,
 and no prior work does so across language editions, although cross-lingual
 comparison of Wikipedia event attention is established as feasible (Ruprechter
-et al. 2023; Gildersleve et al. 2023). Fourth, the use of Wikipedia pageviews to
-measure attention to armed conflict and peace processes.
+et al. 2023; Gildersleve et al. 2023). Fourth, the construction of a cross-lingual attention rate for armed conflict
+and peace processes from Wikipedia pageviews. The data source is not itself
+new: pageview data have been used to help predict battle-related deaths
+(Oswald and Ohrenhofer 2022). What is new is the rate construct and its
+multilingual deployment, not the use of the encyclopedia as a conflict sensor.
 
 Our negative claims are claims about the published, indexed literature as of
 November 2026, not proofs of absence. We searched OpenAlex, Crossref, and
@@ -836,10 +839,10 @@ in each outcome category.
 Discrimination is reported three ways: in-sample AUC, repeated stratified 5-fold
 cross-validated AUC over 200 repeats, and leave-one-out predictive AUC. We treat
 the cross-validated and leave-one-out values as the honest ones and report the
-in-sample value only so that the optimism gap is visible. A Cox
+in-sample value only so that the optimism gap is visible. A univariate Cox
 proportional-hazards model for time to resumption in months, censored at twelve,
-with the same covariates is reported as a survival variant, with hazard ratios
-and a proportional-hazards check. The evaluation conventions are those of the
+is reported as a survival variant, with a hazard ratio and a 95 per cent
+confidence interval. The evaluation conventions are those of the
 early-warning literature: predictive performance rather than statistical
 significance is the criterion (Ward, Greenhill and Bakke 2010; Hegre et al.
 2019), and no information from after the announcement enters the predictors.
@@ -1303,8 +1306,9 @@ in Hebrew at 1.64. The basket-level half-lives point the other way from the
 project's initial expectation: peace concepts decay more slowly at 81.6 days
 against 65.3 days for war concepts, although the paired difference is small and
 its interval spans zero. The attention deficit, in other words, is a deficit in
-the volume of attention, not in its persistence. War attracts more attention and
-sheds it faster; peace attracts less and keeps it longer.
+the volume of attention, not in its persistence. War attracts more attention in volume; we cannot establish that it sheds that
+attention faster, and the paired half-life difference is indistinguishable from
+zero.
 
 This reversal matters for how the result should be framed publicly. The intuitive
 story, that the world forgets peace faster than war, is not what the data show.
@@ -1477,6 +1481,7 @@ and the curated ceasefire table is released with per-row source URLs.
 
 ## References
 
+
 Åkebo, M. (2016). *Ceasefire Agreements and Peace Processes: A Comparative Study*. Routledge. https://doi.org/10.4324/9781315562360
 
 Bara, C., Clayton, G., and Aas Rustad, S. (2021). Understanding ceasefires. *International Peacekeeping*, 28(3), 329-340. https://doi.org/10.1080/13533312.2021.1926236
@@ -1571,6 +1576,8 @@ Mueller, J. E. (1970). Presidential popularity from Truman to Johnson. *American
 
 Murua, I., and Ramírez de la Piscina, T. (2017). Ceasefire as bad news: The coverage of the end of ETA in the Basque and Spanish press. *Revista Latina de Comunicación Social*, 72. https://doi.org/10.4185/RLCS-2017-1228
 
+
+Oswald, C., and Ohrenhofer, D. (2022). Click, click boom: Using Wikipedia data to predict changes in battle-related deaths. *International Interactions*, 48(4), 678-696. https://doi.org/10.1080/03050629.2022.2061969
 Parolo, P. D. B., Pan, R. K., Ghosh, R., Huberman, B. A., Kaski, K., and Fortunato, S. (2015). Attention decay in science. *Journal of Informetrics*, 9(4), 734-745. https://doi.org/10.1016/j.joi.2015.07.006
 
 Pfeffer, J., Matter, D., and Sargsyan, A. (2023). The half-life of a tweet. *Proceedings of the International AAAI Conference on Web and Social Media*, 17, 1163-1167. https://doi.org/10.1609/icwsm.v17i1.22228
