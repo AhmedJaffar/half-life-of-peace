@@ -24,3 +24,6 @@ data/*
 # Local scratch
 *.log
 tmp/
+
+# analysis intermediates
+analysis/artifacts_cache.pkl

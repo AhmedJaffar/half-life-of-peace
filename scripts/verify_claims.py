@@ -90,6 +90,10 @@ def main() -> int:
     body = re.sub(r"```.*?```", "", text, flags=re.S)
     # Strip the YAML front matter
     body = re.sub(r"^---.*?---", "", body, count=1, flags=re.S)
+    # Strip the reference list: years, volumes, pages and DOIs there are
+    # legitimate and are not supposed to trace to the results.
+    body = re.split(r"\n#{1,3}\s*(?:References|Bibliography|Works cited)\b",
+                    body, flags=re.I)[0]
     body = re.sub(r"\]\([^)]*\)", "]()", body)  # drop URLs/paths
 
     unresolved = []

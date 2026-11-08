@@ -1,0 +1,51 @@
+{
+  "generated_at_utc": "2026-11-08T03:16:14Z",
+  "figures": {
+    "fig1_attention_response": {
+      "png": "/Users/ahmedjaffar/Documents/deepseek-harness/default-workspace/peace-halflife/figures/fig1_attention_response.png",
+      "pdf": "/Users/ahmedjaffar/Documents/deepseek-harness/default-workspace/peace-halflife/figures/fig1_attention_response.pdf"
+    },
+    "fig2_pahl_distribution": {
+      "png": "/Users/ahmedjaffar/Documents/deepseek-harness/default-workspace/peace-halflife/figures/fig2_pahl_distribution.png",
+      "pdf": "/Users/ahmedjaffar/Documents/deepseek-harness/default-workspace/peace-halflife/figures/fig2_pahl_distribution.pdf"
+    },
+    "fig3_pahl_vs_resumption": {
+      "png": "/Users/ahmedjaffar/Documents/deepseek-harness/default-workspace/peace-halflife/figures/fig3_pahl_vs_resumption.png",
+      "pdf": "/Users/ahmedjaffar/Documents/deepseek-harness/default-workspace/peace-halflife/figures/fig3_pahl_vs_resumption.pdf"
+    },
+    "fig4_wpar_timeseries": {
+      "png": "/Users/ahmedjaffar/Documents/deepseek-harness/default-workspace/peace-halflife/figures/fig4_wpar_timeseries.png",
+      "pdf": "/Users/ahmedjaffar/Documents/deepseek-harness/default-workspace/peace-halflife/figures/fig4_wpar_timeseries.pdf"
+    },
+    "fig5_event_heatmap": {
+      "png": "/Users/ahmedjaffar/Documents/deepseek-harness/default-workspace/peace-halflife/figures/fig5_event_heatmap.png",
+      "pdf": "/Users/ahmedjaffar/Documents/deepseek-harness/default-workspace/peace-halflife/figures/fig5_event_heatmap.pdf"
+    },
+    "fig6_regional_pahl": {
+      "png": "/Users/ahmedjaffar/Documents/deepseek-harness/default-workspace/peace-halflife/figures/fig6_regional_pahl.png",
+      "pdf": "/Users/ahmedjaffar/Documents/deepseek-harness/default-workspace/peace-halflife/figures/fig6_regional_pahl.pdf"
+    },
+    "fig7_placebo_distribution": {
+      "png": "/Users/ahmedjaffar/Documents/deepseek-harness/default-workspace/peace-halflife/figures/fig7_placebo_distribution.png",
+      "pdf": "/Users/ahmedjaffar/Documents/deepseek-harness/default-workspace/peace-halflife/figures/fig7_placebo_distribution.pdf"
+    },
+    "fig8_roc_prediction": {
+      "png": "/Users/ahmedjaffar/Documents/deepseek-harness/default-workspace/peace-halflife/figures/fig8_roc_prediction.png",
+      "pdf": "/Users/ahmedjaffar/Documents/deepseek-harness/default-workspace/peace-halflife/figures/fig8_roc_prediction.pdf"
+    },
+    "fig9_language_pahl": {
+      "png": "/Users/ahmedjaffar/Documents/deepseek-harness/default-workspace/peace-halflife/figures/fig9_language_pahl.png",
+      "pdf": "/Users/ahmedjaffar/Documents/deepseek-harness/default-workspace/peace-halflife/figures/fig9_language_pahl.pdf"
+    },
+    "fig10_robustness": {
+      "png": "/Users/ahmedjaffar/Documents/deepseek-harness/default-workspace/peace-halflife/figures/fig10_robustness.png",
+      "pdf": "/Users/ahmedjaffar/Documents/deepseek-harness/default-workspace/peace-halflife/figures/fig10_robustness.pdf"
+    }
+  },
+  "n_figures": 10,
+  "dpi": 300,
+  "formats": [
+    "png",
+    "pdf"
+  ]
+}

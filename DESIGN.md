@@ -36,7 +36,7 @@ The gap: **no study has (a) defined and estimated an attention half-life for pea
 |---|---|---|---|
 | Wikimedia pageviews API | Daily article views per language edition | daily × article × language | 2015-07 to 2025-11 |
 | Curated ceasefire table | Verified ceasefire/agreement events | event | 2015–2025 |
-| UCDP GED v24.1 | Georeferenced conflict fatalities | event → monthly | 2014–2025 |
+| UCDP GED v26.1 | Georeferenced conflict fatalities | event → monthly | 2014–2025 |
 
 **Concept families.** WAR: War, Armed conflict, Civil war, Invasion, Airstrike, Genocide, Terrorism, Military occupation, Refugee, War crime. PEACE: Peace, Ceasefire, Peace treaty, Peacebuilding, Mediation, Diplomacy, Reconciliation, Disarmament, Demobilization, Peacekeeping, Humanitarian aid.
 

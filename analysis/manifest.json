@@ -1,0 +1,168 @@
+{
+  "analysis_version": "1.0.0",
+  "generated_at_utc": "2026-11-08T03:16:11Z",
+  "random_seed": 20261107,
+  "package_versions": {
+    "python": "3.9.6",
+    "numpy": "2.0.2",
+    "pandas": "2.3.3",
+    "scipy": "1.13.1",
+    "statsmodels": "0.14.6",
+    "matplotlib": "3.9.4"
+  },
+  "inputs": {
+    "pageviews": {
+      "path": "data/processed/pageviews.csv",
+      "rows": 1736563,
+      "columns": [
+        "lang",
+        "article_en",
+        "article_local",
+        "date",
+        "views"
+      ],
+      "bytes": 100637147,
+      "sha256": "a7a8902b63891ddd0c3467067d0fc337bb62d57adfa567a981a5bfe3be12daaa"
+    },
+    "articles": {
+      "path": "data/processed/articles.csv",
+      "rows": 50,
+      "columns": [
+        "article_en",
+        "seed_titles",
+        "concepts",
+        "family",
+        "conflict",
+        "country_iso3",
+        "region",
+        "n_langs_resolved",
+        "missing_langs"
+      ],
+      "bytes": 4126,
+      "sha256": "7f13b47f58c6cc2d716a256ddc5467c8ff13dd6a77030d8ea5484f24c09d74d3"
+    },
+    "langlinks": {
+      "path": "data/processed/article_langlinks.csv",
+      "rows": 700,
+      "columns": [
+        "article_en",
+        "family",
+        "lang",
+        "article_local",
+        "has_langlink"
+      ],
+      "bytes": 40842,
+      "sha256": "752e8d57c1ab298e312f11513b62f90dd138280e3f20a0b1a7ee3310bd660305"
+    },
+    "ucdp_country": {
+      "path": "data/processed/ucdp_monthly_country.csv",
+      "rows": 5782,
+      "columns": [
+        "iso3",
+        "month",
+        "fatalities",
+        "events"
+      ],
+      "bytes": 101732,
+      "sha256": "09e0576f63ee40d405bca6bd450c9152ef513555f091ec1b1e73136f2d4e682d"
+    },
+    "ucdp_dyad": {
+      "path": "data/processed/ucdp_monthly_dyad.csv",
+      "rows": 20443,
+      "columns": [
+        "dyad_new_id",
+        "dyad_name",
+        "month",
+        "fatalities",
+        "events"
+      ],
+      "bytes": 1013519,
+      "sha256": "386f0a31927ccd604c50490b9bbbace2632aeb9638f73cc25b3efd543699788c"
+    },
+    "ucdp_mapping": {
+      "path": "data/processed/ucdp_country_mapping.csv",
+      "rows": 102,
+      "columns": [
+        "theatre_iso3",
+        "ucdp_country",
+        "ucdp_country_id",
+        "mapping_type",
+        "note"
+      ],
+      "bytes": 3123,
+      "sha256": "85c9f66a1e2ad92d7a82bcc32b54841e7da736c8599bc47daf0d8c732c4ab9e3"
+    },
+    "events": {
+      "path": "data/events/ceasefires.csv",
+      "rows": 36,
+      "columns": [
+        "event_id",
+        "event_name",
+        "event_date",
+        "country_iso3",
+        "conflict_name",
+        "actors",
+        "agreement_type",
+        "geographic_scope",
+        "headline_salience",
+        "source_url",
+        "verified",
+        "ucdp_dyad_id",
+        "ucdp_conflict_id",
+        "notes"
+      ],
+      "bytes": 14720,
+      "sha256": "5f417105a24ecf4c5fdf384e56adedf9f29d3ce7742d1abb76f7d35fdcd8e820"
+    }
+  },
+  "counts": {
+    "n_events": 36,
+    "n_events_mapped": 34,
+    "n_events_with_pahl": 24,
+    "n_events_with_resumption": 33,
+    "n_events_in_prediction": 23,
+    "n_languages": 14,
+    "n_articles": 50,
+    "n_series": 644,
+    "n_days": 3777,
+    "n_obs": 1685694,
+    "date_start": "2015-07-01",
+    "date_end": "2025-11-01"
+  },
+  "results_json": "analysis/results.json",
+  "tables": [
+    "analysis/tables/table1_events.csv",
+    "analysis/tables/table2_pahl_by_event_language.csv",
+    "analysis/tables/table3_pahl_summary.csv",
+    "analysis/tables/table4_wpar_by_language.csv",
+    "analysis/tables/table5_prediction_coefficients.csv",
+    "analysis/tables/table6_resumption_coding.csv",
+    "analysis/tables/table7_event_study.csv",
+    "analysis/tables/table8_placebo.csv",
+    "analysis/tables/table10_spike_placebo.csv",
+    "analysis/tables/table9_robustness.csv"
+  ],
+  "report": "analysis/report.md",
+  "design_parameters": {
+    "pahl_primary_window_days": 90,
+    "pahl_windows": [
+      30,
+      90,
+      270
+    ],
+    "pahl_min_languages": 1,
+    "pahl_multilingual_min": 2,
+    "wpar_hac_lags": 12,
+    "resumption_threshold": 0.25,
+    "resumption_pre_months": 6,
+    "resumption_sustain": 2,
+    "resumption_horizon": 12,
+    "placebo_per_event": 500,
+    "placebo_studies": 500,
+    "permutations": 1000,
+    "bootstrap": 2000,
+    "cv_folds": 5,
+    "cv_repeats": 200,
+    "ridge_penalty": 1.0
+  }
+}

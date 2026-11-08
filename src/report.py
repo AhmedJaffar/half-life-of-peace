@@ -76,6 +76,11 @@ def scan_pageviews(path: Path):
         "date_max": None,
         "languages": {},
         "articles": {},
+        # (lang, article) -> first / last date with a row.  A missing day before
+        # the first date means "article did not exist (or title did not exist)
+        # yet" - it is MISSING, never zero attention.
+        "series_first": {},
+        "series_last": {},
         "ceasefire_daily": {},  # yyyy-mm-dd -> views summed over all languages
         "ceasefire_en_daily": {},
     }
@@ -103,6 +108,12 @@ def scan_pageviews(path: Path):
             art = stats["articles"].setdefault(article, {"views": 0, "langs": set()})
             art["views"] += views
             art["langs"].add(lang)
+            series_key = (lang, article)
+            if series_key not in stats["series_first"]:
+                stats["series_first"][series_key] = date
+                stats["series_last"][series_key] = date
+            elif date > stats["series_last"][series_key]:
+                stats["series_last"][series_key] = date
             if article == "Ceasefire":
                 stats["ceasefire_daily"][date] = stats["ceasefire_daily"].get(date, 0) + views
                 if lang == "en":
@@ -157,7 +168,11 @@ def build_sanity(stats, ucdp_summary):
     lines.append("   visible spike: {}".format("YES" if spike else "NO"))
     lines.append("")
 
-    lines.append("4) UCDP GED v24.1 monthly aggregates")
+    lines.append(
+        "4) UCDP monthly aggregates ({})".format(
+            ucdp_summary.get("version", "n/a") if ucdp_summary else "n/a"
+        )
+    )
     if ucdp_summary:
         lines.append("   events parsed (all years): {:,}".format(ucdp_summary["events_parsed_total"]))
         lines.append("   events kept (year>=2014): {:,}".format(ucdp_summary["events_year_ge_2014"]))
@@ -202,8 +217,11 @@ def build_readme(stats, ucdp_summary, fetch_report):
     add("")
     add(
         "Daily multilingual Wikipedia attention series (2015-07-01 to 2025-11-01) and "
-        "monthly UCDP conflict-fatality aggregates (2014-2023), built by the "
-        "reproducible pipeline in `src/` and orchestrated by `scripts/run_all.py`."
+        "monthly UCDP conflict-fatality aggregates ({} to {}), built by the "
+        "reproducible pipeline in `src/` and orchestrated by `scripts/run_all.py`.".format(
+            ucdp_summary.get("month_min", "2014-01")[:4] if ucdp_summary else "2014",
+            ucdp_summary.get("month_max", "2025-12")[:4] if ucdp_summary else "2025",
+        )
     )
     add("")
     add("- **Data retrieval date:** {}".format(RETRIEVAL_DATE))
@@ -231,8 +249,11 @@ def build_readme(stats, ucdp_summary, fetch_report):
     add("")
     add("```bash")
     add("# from the repository root, with the project venv")
-    add(".venv/bin/python scripts/run_all.py            # full pipeline (uses cache)")
-    add(".venv/bin/python scripts/run_all.py --refresh  # force re-download")
+    add(".venv/bin/python scripts/run_all.py                 # data pipeline (uses cache)")
+    add(".venv/bin/python scripts/run_all.py --refresh       # force re-download")
+    add(".venv/bin/python scripts/run_all.py --stage analysis # delegate to analysis/run.py --stage analysis")
+    add(".venv/bin/python scripts/run_all.py --stage figures  # figures from cached analysis artifacts")
+    add(".venv/bin/python scripts/run_all.py --stage all      # data + analysis + figures")
     add("```")
     add("")
     add(
@@ -280,8 +301,13 @@ def build_readme(stats, ucdp_summary, fetch_report):
     )
     add("- Conflict-specific articles: {}".format(len(CONCEPT["conflict"])))
     add(
-        "- Article/language pairs resolved: {} (+ English for all articles) = {}".format(
-            stats.get("lang_pairs_minus_en", 0), stats.get("lang_pairs", 0)
+        "- Article/language cells: {:,} ({} articles x {} languages); resolved to an "
+        "article: {:,}; missing translations: {:,}".format(
+            stats.get("lang_pairs", 0),
+            stats.get("n_articles", 0),
+            len(LANGS),
+            stats.get("resolved_pairs", 0),
+            max(stats.get("lang_pairs", 0) - stats.get("resolved_pairs", 0), 0),
         )
     )
     add("")
@@ -372,6 +398,42 @@ def build_readme(stats, ucdp_summary, fetch_report):
         )
     add("")
 
+    add("#### Temporal existence convention (important for baselines/WPAR)")
+    add("")
+    add(
+        "A row in `pageviews.csv` exists only from the day a series first registers "
+        "pageviews - i.e. from article creation (or from the earliest title in the "
+        "summed title chain for English). **Days before a series' first row are "
+        "MISSING, not zero.** Filling them with 0 would understate pre-creation "
+        "baselines and distort the War-Peace Attention Ratio; availability-aware "
+        "aggregation must treat them as absent."
+    )
+    add("")
+    add(
+        "- {:,} article/language series are present; **{:,} start after "
+        "2015-07-01** because the article (or title) did not exist earlier.".format(
+            stats.get("n_series", 0), stats.get("n_late_series", 0)
+        )
+    )
+    if stats.get("late_series_examples"):
+        add("- Latest series onsets: " + "; ".join(
+            "{} ({}, first row {})".format(article, lang, first)
+            for (lang, article), first in stats["late_series_examples"]
+        ) + ".")
+    add(
+        "- **{:,} langlink-resolved article/language pairs have no pageview rows at "
+        "all** (article exists in the edition but the pageviews API returned nothing); "
+        "they are kept as all-missing and logged in `missing_articles.csv`.".format(
+            stats.get("n_all_missing", 0)
+        )
+    )
+    if stats.get("all_missing_examples"):
+        add("- All-missing examples: " + "; ".join(
+            "{} ({})".format(article, lang)
+            for lang, article in stats["all_missing_examples"]
+        ) + ".")
+    add("")
+
     # missing
     add("### `data/processed/missing_articles.csv` - missing translations / pages")
     add("")
@@ -452,9 +514,14 @@ def build_readme(stats, ucdp_summary, fetch_report):
     )
     add("")
     add(
-        "Top-5 countries by 2014-2023 fatalities: {}.".format(
-            ", ".join("{} {:,}".format(iso, fat) for iso, fat in top_countries(DATA_PROCESSED / "ucdp_monthly_country.csv"))
-            or "n/a"
+        "Top-5 countries by {}-{} fatalities: {}.".format(
+            ucdp_summary.get("month_min", "2014-01")[:4] if ucdp_summary else "2014",
+            ucdp_summary.get("month_max", "2025-12")[:4] if ucdp_summary else "2025",
+            ", ".join(
+                "{} {:,}".format(iso, fat)
+                for iso, fat in top_countries(DATA_PROCESSED / "ucdp_monthly_country.csv")
+            )
+            or "n/a",
         )
     )
     add("")
@@ -504,9 +571,23 @@ def build_readme(stats, ucdp_summary, fetch_report):
     add("| `data/raw/langlinks.json` | consolidated title -> canonical title + langlinks + move chain |")
     add("| `data/raw/pageviews/<lang>/` | raw Wikimedia pageviews responses (one JSON per title/range) |")
     add("| `data/raw/pageviews_fetch_report.json` | fetch accounting (requests, cache hits, retries, status counts) |")
-    add("| `data/raw/ucdp/ged241-csv.zip` | official UCDP GED v24.1 zip (29.9 MB) |")
-    add("| `data/raw/ucdp/GEDEvent_v24_1.csv` | extracted GED event table (349,733 rows) |")
-    add("| `data/raw/ucdp/ucdp_summary.json` | UCDP parse/aggregation summary |")
+    if ucdp_summary:
+        zip_info = ucdp_summary.get("zip_info", {})
+        add(
+            "| `data/raw/ucdp/ged{}-csv.zip` | official UCDP {} release used ({:.1f} MB) |".format(
+                ucdp_summary.get("version", "").replace("GED v", "").replace(".", ""),
+                ucdp_summary.get("version", ""),
+                zip_info.get("zip_bytes", 0) / (1024.0 * 1024.0),
+            )
+        )
+        add(
+            "| `data/raw/ucdp/{}` | extracted GED event table ({:,} events) |".format(
+                zip_info.get("member", "GEDEvent_v26_1.csv"),
+                ucdp_summary.get("events_parsed_total", 0),
+            )
+        )
+    add("| `data/raw/ucdp/ged241-csv.zip` | cached UCDP GED v24.1 zip (automatic fallback release) |")
+    add("| `data/raw/ucdp/ucdp_summary.json` | UCDP parse/aggregation summary (records the release actually used) |")
     add("")
     if fetch_report:
         http = fetch_report.get("http", {})
@@ -548,8 +629,21 @@ def build_readme(stats, ucdp_summary, fetch_report):
         )
     )
     add(
-        "6. **Attention series start at the article creation**; a series may begin "
-        "later than 2015-07-01 if the article did not exist yet."
+        "   For ceasefires after 2024-12 the 12-month follow-up window is truncated "
+        "by the release end ({}).".format(
+            ucdp_summary.get("month_max", "n/a") if ucdp_summary else "n/a"
+        )
+    )
+    add(
+        "6. **Temporal existence convention:** attention series start when the article "
+        "(or, for summed English title chains, the earliest title) first registers "
+        "pageviews. Days before the first row are **missing, not zero**; "
+        "{:,} of {:,} present series start after 2015-07-01, and {:,} resolved "
+        "article/language pairs are entirely missing (see the pageviews section).".format(
+            stats.get("n_late_series", 0),
+            stats.get("n_series", 0),
+            stats.get("n_all_missing", 0),
+        )
     )
     add("")
     add("## Related inputs not produced here")
@@ -598,7 +692,30 @@ def run():
     stats = scan_pageviews(pageviews_path)
     stats["lang_pairs"] = _count_csv_rows(DATA_PROCESSED / "article_langlinks.csv")
     stats["n_articles"] = _count_csv_rows(DATA_PROCESSED / "articles.csv")
-    stats["lang_pairs_minus_en"] = max(stats["lang_pairs"] - stats["n_articles"], 0)
+    resolved_pairs = 0
+    resolved_keys = []
+    langlinks_csv = DATA_PROCESSED / "article_langlinks.csv"
+    if langlinks_csv.exists():
+        with open(langlinks_csv, "r", encoding="utf-8", newline="") as fh:
+            for row in csv.DictReader(fh):
+                if row.get("has_langlink") == "1":
+                    resolved_pairs += 1
+                    resolved_keys.append((row["lang"], row["article_en"]))
+    stats["resolved_pairs"] = resolved_pairs
+
+    # Temporal-existence accounting (article creation / title rename -> series start).
+    present = set(stats["series_first"])
+    stats["n_series"] = len(present)
+    late = sorted(
+        ((key, first) for key, first in stats["series_first"].items() if first > "2015-07-01"),
+        key=lambda kv: kv[1],
+        reverse=True,
+    )
+    stats["n_late_series"] = len(late)
+    stats["late_series_examples"] = late[:8]
+    all_missing = [key for key in resolved_keys if key not in present]
+    stats["n_all_missing"] = len(all_missing)
+    stats["all_missing_examples"] = sorted(all_missing)[:10]
 
     ucdp_summary = {}
     summary_path = DATA_RAW / "ucdp" / "ucdp_summary.json"

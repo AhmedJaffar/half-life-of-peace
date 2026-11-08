@@ -99,7 +99,7 @@ RESUMPTION_HORIZON = 12
 _GENERIC_TOKENS = {
     "conflict", "conflicts", "war", "wars", "civil", "the", "of", "in", "and",
     "a", "an", "to", "for", "on", "at", "with", "between", "present", "ongoing",
-    "crisis", "insurgency", "rebellion", "dispute",
+    "crisis", "insurgency", "rebellion", "dispute", "armed", "ethnic",
 }
 
 
@@ -129,6 +129,25 @@ def title_tokens(text: object) -> set:
     return toks
 
 
+def _tokens_match(a: str, b: str) -> bool:
+    """Exact or morphological-prefix token match (``sudan`` ~ ``sudanese``)."""
+    if a == b:
+        return True
+    if len(a) >= 4 and len(b) >= 4:
+        return a.startswith(b) or b.startswith(a)
+    return False
+
+
+def _token_overlap(ta: set, tb: set) -> int:
+    if not ta or not tb:
+        return 0
+    matched = 0
+    for a in ta:
+        if any(_tokens_match(a, b) for b in tb):
+            matched += 1
+    return matched
+
+
 def title_similarity(a: object, b: object) -> float:
     """Similarity in [0, 1] combining token Jaccard and string proximity.
 
@@ -144,7 +163,9 @@ def title_similarity(a: object, b: object) -> float:
     ta, tb = title_tokens(a), title_tokens(b)
     if not ta or not tb:
         return 0.0
-    jaccard = len(ta & tb) / len(ta | tb)
+    matched = _token_overlap(ta, tb)
+    union = len(ta) + len(tb) - matched
+    jaccard = matched / union if union else 0.0
     from difflib import SequenceMatcher
     seq = SequenceMatcher(None, na, nb).ratio()
     return float(0.75 * jaccard + 0.25 * seq)
@@ -159,107 +180,117 @@ def map_events_to_articles(
     events: pd.DataFrame,
     articles: pd.DataFrame,
     article_names: Optional[Iterable[str]] = None,
-    *,
-    require_observed: bool = True,
 ) -> pd.DataFrame:
     """Map each ceasefire event to one conflict article covering its theatre.
 
     Strategy, in order:
 
-    1. exact normalised match between ``event.conflict_name`` and
-       ``article.conflict`` (score 1.0);
-    2. fuzzy name match above ``NAME_MAP_MIN_SCORE``;
+    1. exact normalised match between ``event.conflict_name`` and the
+       article title or the article's conflict label (score 1.0);
+    2. fuzzy name match above :data:`NAME_MAP_MIN_SCORE`, accepted when the
+       candidate is in the event's theatre country *or* when every distinctive
+       token of the candidate title appears in the event's conflict name (this
+       is what lets Kashmir conflict stand in for an India-Pakistan event
+       without letting an Israel-Hezbollah article stand in for an Israel-Iran
+       event);
     3. if the event's country has exactly one conflict article, use it
-       (method ``country_unique``, lower confidence);
+       (``country_unique``; lower confidence);
     4. otherwise leave the event unmapped (``article_en`` is ``None``).
 
     ``article_names`` optionally restricts candidates to articles actually
-    present in the pageview panel (useful when a conflict article failed to
-    resolve).
+    present in the pageview panel.
 
     Returns one row per event with ``event_id``, ``article_en``,
-    ``mapping_method``, ``mapping_score``, ``confidence`` and ``n_candidates``.
+    ``mapping_method``, ``mapping_score``, ``confidence`` and
+    ``n_candidates``.  The mapping method and score are reported in the
+    analysis tables so the judgement is auditable.
     """
+    cols = {
+        "event_id": events["event_id"].tolist(),
+        "article_en": [None] * len(events),
+        "mapping_method": ["unmapped"] * len(events),
+        "mapping_score": [0.0] * len(events),
+        "confidence": ["none"] * len(events),
+        "n_candidates": [0] * len(events),
+    }
+    if articles is None or articles.empty:
+        return pd.DataFrame(cols)
+
     cand = articles.copy()
     cand = cand[cand["family"].astype(str) == "conflict"].copy()
     if article_names is not None:
         observed = set(article_names)
         cand = cand[cand["article_en"].isin(observed)]
-    if cand.empty:
-        return pd.DataFrame(
-            {
-                "event_id": events["event_id"].tolist(),
-                "article_en": [None] * len(events),
-                "mapping_method": ["unmapped"] * len(events),
-                "mapping_score": [0.0] * len(events),
-                "confidence": ["none"] * len(events),
-                "n_candidates": [0] * len(events),
-            }
-        )
-
     cand = cand.drop_duplicates("article_en").reset_index(drop=True)
+    if cand.empty:
+        return pd.DataFrame(cols)
+
     cand_norm = [normalize_title(c) for c in cand["article_en"]]
     cand_conflict_norm = [normalize_title(c) for c in cand["conflict"]]
+    cand_tokens = [title_tokens(c) for c in cand["article_en"]]
+    cand_country = [
+        str(iso) if pd.notna(iso) else "" for iso in cand.get("country_iso3", [None] * len(cand))
+    ]
     country_index: Dict[str, List[int]] = {}
-    for i, iso in enumerate(cand.get("country_iso3", pd.Series([None] * len(cand)))):
-        key = str(iso) if pd.notna(iso) else ""
-        country_index.setdefault(key, []).append(i)
+    for i, iso in enumerate(cand_country):
+        country_index.setdefault(iso, []).append(i)
+
+    def _score(conflict: object, i: int) -> float:
+        return max(
+            title_similarity(conflict, cand["article_en"].iloc[i]),
+            title_similarity(conflict, cand["conflict"].iloc[i]),
+        )
+
+    def _coverage(conflict: object, i: int) -> float:
+        """Fraction of the candidate article's content tokens named by the event."""
+        ev_tokens = title_tokens(conflict)
+        toks = cand_tokens[i]
+        if not toks:
+            return 0.0
+        return float(sum(1 for tok in toks if any(_tokens_match(tok, e) for e in ev_tokens)) / len(toks))
 
     rows = []
     for _, ev in events.iterrows():
         conflict = ev.get("conflict_name", "")
-        iso = ev.get("country_iso3", None)
-        best_score = -1.0
-        best_i: Optional[int] = None
-        exact = False
+        iso = str(ev.get("country_iso3")) if pd.notna(ev.get("country_iso3")) else ""
         norm_conflict = normalize_title(conflict)
+        exact_i: Optional[int] = None
         for i in range(len(cand)):
             if norm_conflict and norm_conflict in (cand_norm[i], cand_conflict_norm[i]):
-                best_score, best_i, exact = 1.0, i, True
+                exact_i = i
                 break
-            score = max(
-                title_similarity(conflict, cand["article_en"].iloc[i]),
-                title_similarity(conflict, cand["conflict"].iloc[i]),
-            )
-            if score > best_score:
-                best_score, best_i = score, i
-
-        method, confidence = "unmapped", "none"
-        article = None
-        if best_i is not None and exact:
-            article = cand["article_en"].iloc[best_i]
-            method, confidence = "exact_name", "high"
-            best_score = 1.0
-        elif best_i is not None and best_score >= NAME_MAP_MIN_SCORE:
-            article = cand["article_en"].iloc[best_i]
-            method = "fuzzy_name"
-            confidence = "high" if best_score >= 0.55 else "medium"
-            if best_score <= COUNTRY_FALLBACK_MIN_SCORE + 1e-12:
-                confidence = "low"
+        best_i = exact_i
+        if best_i is None:
+            scores = [_score(conflict, i) for i in range(len(cand))]
+            best_i = int(np.argmax(scores)) if scores else None
+            best_score = float(max(scores)) if scores else 0.0
         else:
-            iso_key = str(iso) if pd.notna(iso) else ""
-            idxs = country_index.get(iso_key, [])
-            if len(idxs) == 1 and best_score < NAME_MAP_MIN_SCORE:
-                i = idxs[0]
-                article = cand["article_en"].iloc[i]
-                method, confidence = "country_unique", "low"
-            elif len(idxs) >= 1:
-                # multiple articles share the theatre country: take the best
-                # name score among them rather than guessing
-                def _local_score(j: int) -> float:
-                    return max(
-                        title_similarity(conflict, cand["article_en"].iloc[j]),
-                        title_similarity(conflict, cand["conflict"].iloc[j]),
-                    )
+            best_score = 1.0
 
-                local_best = max(_local_score(j) for j in idxs)
-                if local_best > 0:
-                    i = max(idxs, key=_local_score)
-                    article = cand["article_en"].iloc[i]
-                    best_score = float(local_best)
+        method, confidence, article = "unmapped", "none", None
+        if exact_i is not None:
+            article, method, confidence = cand["article_en"].iloc[exact_i], "exact_name", "high"
+        elif best_i is not None and best_score >= NAME_MAP_MIN_SCORE:
+            country_ok = cand_country[best_i] == iso
+            coverage = _coverage(conflict, best_i)
+            if country_ok or coverage >= 0.999:
+                article = cand["article_en"].iloc[best_i]
+                method = "fuzzy_name"
+                confidence = "high" if best_score >= 0.55 else "medium"
+        if article is None:
+            idxs = country_index.get(iso, [])
+            if len(idxs) == 1:
+                article = cand["article_en"].iloc[idxs[0]]
+                method, confidence = "country_unique", "low"
+                best_score = max(best_score, 0.0)
+            elif len(idxs) > 1:
+                local = {j: _score(conflict, j) for j in idxs}
+                best_j = max(local, key=local.get)
+                if local[best_j] > 0:
+                    article = cand["article_en"].iloc[best_j]
+                    best_score = float(local[best_j])
                     method, confidence = "country_multi_best", "low"
 
-        n_cand = len(country_index.get(str(iso) if pd.notna(iso) else "", []))
         rows.append(
             {
                 "event_id": ev["event_id"],
@@ -267,7 +298,7 @@ def map_events_to_articles(
                 "mapping_method": method,
                 "mapping_score": float(max(best_score, 0.0)),
                 "confidence": confidence,
-                "n_candidates": int(n_cand),
+                "n_candidates": int(len(country_index.get(iso, []))),
             }
         )
     return pd.DataFrame(rows)
@@ -332,14 +363,17 @@ class AttentionPanel:
         dictionary: several titles may feed one article after page moves) and
         the log is taken afterwards.
         """
-        total: Optional[np.ndarray] = None
+        arrays = []
         for art in article_ens:
             arr = self.series_views(lang, art)
-            if arr is None:
-                continue
-            total = arr.copy() if total is None else total + arr
-        if total is None:
+            if arr is not None:
+                arrays.append(arr)
+        if not arrays:
             return None
+        stack = np.vstack(arrays)
+        all_missing = np.all(np.isnan(stack), axis=0)
+        total = np.nansum(stack, axis=0)
+        total[all_missing] = np.nan
         return np.log1p(total)
 
     def articles_for_family(self, family: str) -> List[str]:
@@ -354,7 +388,7 @@ class AttentionPanel:
             raise ValueError("no articles for family {!r}".format(family))
         sub = self.views.loc[:, (slice(None), arts)]
         # sum across articles, keep language level
-        per_lang = sub.T.groupby(level=0).sum().T
+        per_lang = sub.T.groupby(level=0).sum(min_count=1).T
         per_lang.index = pd.DatetimeIndex(per_lang.index)
         monthly = per_lang.resample("MS").sum(min_count=1)
         monthly.index = monthly.index.strftime("%Y-%m")
@@ -449,15 +483,35 @@ def build_attention_panel(
     existence_keys = {(lg, art) for (lg, art) in existence_keys if art in meta.index}
 
     # -- pivot to wide ------------------------------------------------------
+    # Existence is temporal, not just cross-sectional: an article created in
+    # 2023 must not be treated as a zero-attention article in 2015.  The
+    # pageview API returns rows only while the page exists, so the first and
+    # last observed dates delimit the existence window.  Interior missing
+    # calendar days are genuine zeros (page existed, nobody looked); days
+    # outside [first, last] are missing (page did not exist), not zeros.
     wide = pv.pivot(index="date", columns=["lang", "article_en"], values="views")
-    wide = wide.reindex(dates).fillna(0.0)
-    # add linked-but-unobserved series as zeros
+    wide = wide.reindex(dates)
+    n_partial = 0
+    for col in wide.columns:
+        arr = wide[col].to_numpy(dtype=float)
+        finite = np.isfinite(arr)
+        if not finite.any():
+            continue
+        first = int(np.argmax(finite))
+        last = int(len(arr) - 1 - np.argmax(finite[::-1]))
+        if first > 0 or last < len(arr) - 1:
+            n_partial += 1
+        inner = arr[first:last + 1]
+        inner = np.where(np.isfinite(inner), inner, 0.0)
+        filled = np.full(len(arr), np.nan)
+        filled[first:last + 1] = inner
+        wide[col] = filled
+    # linked-but-unobserved series (possible fetch gaps): retain as all-missing
+    # so they never contribute spurious zeros, and count them in diagnostics
     existing_cols = set(wide.columns)
-    add_cols = []
-    for key in sorted(existence_keys - existing_cols):
-        add_cols.append(key)
+    add_cols = sorted(existence_keys - existing_cols)
     if add_cols:
-        block = pd.DataFrame(0.0, index=dates, columns=pd.MultiIndex.from_tuples(add_cols))
+        block = pd.DataFrame(np.nan, index=dates, columns=pd.MultiIndex.from_tuples(add_cols))
         wide = pd.concat([wide, block], axis=1)
     wide = wide.sort_index(axis=1)
     wide.columns = pd.MultiIndex.from_tuples(
@@ -465,13 +519,19 @@ def build_attention_panel(
     )
     wide = wide.astype(float)
 
-    n_obs_positive = int((wide.to_numpy() > 0).sum())
+    values = wide.to_numpy(dtype=float)
+    n_obs_positive = int(np.nansum(values > 0))
+    n_obs_missing = int(np.isnan(values).sum())
     n_series = int(wide.shape[1])
+    n_series_observed = int((~np.isnan(values)).any(axis=0).sum())
     diagnostics = {
         "n_series": n_series,
+        "n_series_observed": n_series_observed,
+        "n_series_unobserved": int(n_series - n_series_observed),
+        "n_series_partial_coverage": int(n_partial),
         "n_days": int(len(dates)),
         "n_obs_positive": n_obs_positive,
-        "n_series_zero_only": int(n_zero_only),
+        "n_obs_missing": n_obs_missing,
         "n_articles_expected_from_langlinks": int(len(existence_keys)),
         "n_bad_rows_dropped": n_bad_rows,
         "n_negative_rows_dropped": n_negative,
@@ -570,11 +630,14 @@ def rolling_baseline(
     masked = x.copy()
     masked[lo:hi] = np.nan
     base = _centred_rolling_mean(masked, window, min_periods)
-    # fill the masked window from the pre-event baseline
-    if np.isfinite(pre_value):
-        base[lo:hi] = pre_value
-    else:
-        base[lo:hi] = np.nan
+    # fill the masked window from the pre-event baseline; if the event is too
+    # early for a pre-window (e.g. mid-2015 events), fall back to the series'
+    # own median so the curve is defined rather than missing
+    fill_value = pre_value
+    if not np.isfinite(fill_value):
+        finite_x = x[np.isfinite(x)]
+        fill_value = float(np.median(finite_x)) if finite_x.size else float("nan")
+    base[lo:hi] = fill_value
     # fill residual nan at the array edges by nearest finite value
     finite = np.isfinite(base)
     if finite.any():
@@ -671,6 +734,29 @@ def huber_slope(
             break
         beta = beta_new
     return float(beta[1]), float(beta[0])
+
+
+def fit_pahl_windowed(
+    log_views: np.ndarray,
+    t0_pos: int,
+    *,
+    pre_start: int = PRE_START,
+    post_margin: int = 10,
+    **kwargs,
+) -> Dict[str, object]:
+    """``fit_pahl_series`` restricted to the days around the event.
+
+    Slicing the series first makes the placebo exercise (tens of thousands of
+    fits) fast while producing exactly the same estimate: no fit-relevant day
+    lies outside ``[t0 + pre_start - 5, t0 + peak_end + window + margin]``.
+    """
+    window = int(kwargs.get("window", PRIMARY_DECAY_WINDOW))
+    peak_end = int(kwargs.get("peak_end", PEAK_END))
+    lo = max(0, int(t0_pos) + int(pre_start) - 5)
+    hi = min(len(log_views), int(t0_pos) + peak_end + window + int(post_margin))
+    if hi <= lo:
+        return {"ok": False, "reason": "insufficient_data"}
+    return fit_pahl_series(log_views[lo:hi], int(t0_pos) - lo, **kwargs)
 
 
 def fit_pahl_series(
@@ -851,6 +937,130 @@ def crossing_half_life(
         "peak_pos": int(peak_pos),
         "peak_offset": int(peak_pos - t0_pos),
         "peak_excess": peak_excess,
+    }
+
+
+def fit_decay_from_excess(
+    excess: np.ndarray,
+    t0_pos: int,
+    *,
+    window: int = PRIMARY_DECAY_WINDOW,
+    peak_end: int = PEAK_END,
+    smooth: int = SMOOTH,
+    min_amplitude: float = MIN_AMPLITUDE_LOG,
+    floor_frac: float = MIN_FLOOR_FRAC,
+    min_points: int = MIN_FIT_POINTS,
+) -> Dict[str, object]:
+    """Fit PAHL on an arbitrary pre-computed excess-attention series.
+
+    Used for the rolling-baseline sensitivity: ``excess`` is
+    ``log(1+views) - rolling_baseline`` rather than minus the fixed pre-event
+    median.  Otherwise identical to :func:`fit_pahl_series` (same peak search,
+    smoothing and robust Theil-Sen log-linear fit), with the peak-views floor
+    dropped because the excess scale is no longer a log level.
+    """
+    e = np.asarray(excess, dtype=float)
+    n = len(e)
+    if n == 0 or not np.isfinite(e).any():
+        return {"ok": False, "reason": "empty_series"}
+    smoothed = _centred_rolling_median(e, smooth)
+    peak_lo, peak_hi = max(0, t0_pos), min(n - 1, t0_pos + peak_end)
+    if peak_hi <= peak_lo:
+        return {"ok": False, "reason": "insufficient_post_event_window"}
+    seg = smoothed[peak_lo:peak_hi + 1]
+    if not np.isfinite(seg).any():
+        return {"ok": False, "reason": "no_post_event_data"}
+    peak_pos = peak_lo + int(np.nanargmax(seg))
+    peak_excess = float(smoothed[peak_pos])
+    if not np.isfinite(peak_excess) or peak_excess < min_amplitude:
+        return {"ok": False, "reason": "no_spike", "peak_excess": peak_excess}
+    fit_lo = peak_pos + 1
+    fit_hi = min(n - 1, peak_pos + window)
+    if fit_hi <= fit_lo:
+        return {"ok": False, "reason": "insufficient_decay_window"}
+    t = np.arange(1, fit_hi - fit_lo + 2, dtype=float)
+    seg_excess = smoothed[fit_lo:fit_hi + 1]
+    floor = max(1e-6, floor_frac * peak_excess)
+    good = np.isfinite(seg_excess) & (seg_excess > floor)
+    if int(good.sum()) < min_points:
+        return {"ok": False, "reason": "insufficient_decay_points", "n_points": int(good.sum())}
+    log_excess = np.log(seg_excess[good])
+    slope, _ = theil_sen_slope(t[good], log_excess)
+    if not np.isfinite(slope):
+        return {"ok": False, "reason": "fit_failed"}
+    lam = -slope
+    if lam <= 0:
+        return {"ok": False, "reason": "no_decay", "lambda": float(lam)}
+    pahl_raw = float(math.log(2.0) / lam)
+    censored = bool(pahl_raw > window)
+    return {
+        "ok": True,
+        "pahl_days": float(window if censored else pahl_raw),
+        "pahl_raw": pahl_raw,
+        "lambda": float(lam),
+        "censored": censored,
+        "peak_pos": int(peak_pos),
+        "peak_offset": int(peak_pos - t0_pos),
+        "peak_excess": peak_excess,
+        "n_points": int(good.sum()),
+        "estimator": "theil-sen on log excess (rolling baseline)",
+    }
+
+
+def event_pahl_from_series(
+    series_by_lang: Dict[str, np.ndarray],
+    t0_pos: int,
+    *,
+    window: int = PRIMARY_DECAY_WINDOW,
+    min_languages: int = 1,
+    **fit_kwargs,
+) -> Dict[str, object]:
+    """Multilingual event PAHL from precomputed per-language log series.
+
+    Avoids rebuilding the panel series inside resampling loops (the placebo
+    test calls this tens of thousands of times).  Returns the same structure
+    as :func:`event_pahl`.
+    """
+    rows: List[Dict[str, object]] = []
+    for lang, arr in series_by_lang.items():
+        fit = fit_pahl_windowed(arr, t0_pos, window=window, **fit_kwargs)
+        row = {"language": lang}
+        row.update(fit)
+        rows.append(row)
+    valid = [r for r in rows if r.get("ok")]
+    values = [
+        float(r["pahl_days"]) for r in valid
+        if r.get("pahl_days") is not None and np.isfinite(float(r["pahl_days"]))
+    ]
+    if len(values) < max(1, int(min_languages)):
+        return {
+            "ok": False,
+            "reason": "too_few_language_fits",
+            "n_languages": int(len(values)),
+            "per_language_all": rows,
+        }
+    median_pahl = float(np.median(values))
+    raw_values = [
+        float(r["pahl_raw"]) for r in valid
+        if r.get("pahl_raw") is not None and np.isfinite(float(r["pahl_raw"]))
+    ]
+    r2_values = [
+        float(r["r2"]) for r in valid
+        if r.get("r2") is not None and np.isfinite(float(r["r2"]))
+    ]
+    return {
+        "ok": True,
+        "pahl_days": median_pahl,
+        "pahl_raw": float(np.median(raw_values)) if raw_values else None,
+        "lambda": float(math.log(2.0) / median_pahl) if median_pahl > 0 else float("nan"),
+        "n_languages": int(len(values)),
+        "languages": [r["language"] for r in valid],
+        "censored_frac": float(np.mean([bool(r.get("censored")) for r in valid])),
+        "peak_excess": float(np.median([float(r["peak_excess"]) for r in valid])),
+        "peak_offset": float(np.median([float(r["peak_offset"]) for r in valid])),
+        "r2": float(np.median(r2_values)) if r2_values else None,
+        "per_language": valid,
+        "per_language_all": rows,
     }
 
 
