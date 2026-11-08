@@ -444,8 +444,12 @@ political costs of defection depend on being seen, then sustained attention
 after an announcement raises the cost of violating the agreement, and a longer
 half-life should predict a lower hazard of resumption. On this account the
 decay rate is a proxy for the durability of the enforcement environment, and the
-pre-registered directional expectation of the project is the negative one: a
-longer PAHL predicts a lower probability of resumption.
+directional expectation recorded in the project's design document before any
+estimation was run is the negative one: a longer PAHL predicts a lower
+probability of resumption. We did not deposit a public pre-registration; the
+design document (`DESIGN.md`) and the falsification conditions were, however,
+committed to the repository before the analysis was executed, and the commit
+history is the record of what was fixed in advance.
 
 The salience mechanism treats attention as a symptom. News value is driven by
 drama, novelty, and violence (Galtung and Ruge 1965); a ceasefire that works
@@ -801,14 +805,20 @@ a low-intensity conflict as successful. Requiring two consecutive months
 prevents a single atrocity or data artefact from driving the outcome, and the
 intensity-threshold approach follows the standard in the ceasefire literature,
 where violations are near-universal and collapse is defined by escalation rather
-than by violation (Sticher 2022; Clayton and Sticher 2021). The primary analysis
-uses the country-level series; a dyad-level variant is reported as a robustness
-check. Time to resumption is measured in months from the event date to the first
+than by violation (Sticher 2022; Clayton and Sticher 2021). The primary analysis uses the country-level series, joined through the documented theatre mapping. Time to resumption is measured in months from the event date to the first
 month of the qualifying pair, censored at twelve months for ceasefires that
-hold. Alternative thresholds and a three-consecutive-month variant are reported
-in the robustness checks. We report the base rate of resumption before any modelling,
-because with a small sample the base rate is more informative than any
-coefficient.
+hold. Alternative thresholds are reported in the robustness checks. We report the base rate of resumption before any modelling, because with a small
+sample the base rate is more informative than any coefficient.
+
+One limitation of the coding is structural and worth stating in the methods
+rather than only in the limitations. Because the fatality series are monthly and
+the post-event window begins with the event month, an announcement that falls
+late in a month contributes that month's pre-announcement violence to the first
+month of follow-up. In a high-intensity theatre this can push the first post
+month over the relative threshold without any violation having occurred. The
+relative threshold limits the problem, since it compares the post period with
+the same theatre's own pre-period, but it does not remove it, and it biases
+coding toward resumption for events announced late in a violent month.
 
 ### Predictive models and evaluation
 
@@ -1373,6 +1383,19 @@ before the announcement. The sample departs from the population-level ceasefire
 dataset for reasons of measurability, so the estimates describe the cases we could
 measure rather than ceasefires in general.
 
+Event-to-article mapping. Attention is measured on the conflict article that the
+mapping step judged to cover the theatre, and that judgement is heuristic; every
+mapping, its method and its confidence are reported in Table 1. Restricting to
+exact and high-confidence mappings gives a median of 40.5 days (n = 19), close to
+the headline. The remainder includes at least two events whose best available
+article covers a related rather than the same conflict: the May 2025
+India-Pakistan ceasefire is measured against the article on insurgency in Khyber
+Pakhtunkhwa, and the 2015 Myanmar ceasefire against an article whose subject is
+the civil war that began in 2021. Where the correct article did not exist before
+the announcement the event yields no half-life and is excluded, but two events
+with usable fits rest on mappings we regard as weak, and the event-level
+half-lives should be treated as indicative rather than exact.
+
 No causal identification. Attention and violence are jointly determined; the
 adjusted model controls for pre-event fatalities but cannot separate attention
 from the conflict dynamics that generate both. Nothing here identifies an effect
@@ -1391,9 +1414,10 @@ depends on the horizon, as the comparison from 15.7 days at a 30-day window to
 
 Outcome coding. Resumption uses the 25 per cent, six-month, two-consecutive-month
 rule on country-level UCDP GED fatalities; Gaza events are joined to Israeli
-fatalities through the documented proxy; events at the edge of fatality coverage
-in 2024 and 2025 cannot be coded; and three events lack a full twelve-month
-follow-up. The 50 per cent threshold attenuates the predictive association
+fatalities through the documented proxy; the twelve-month follow-up window begins with the event
+month, so a late-month announcement can have pre-announcement violence counted
+in its first post month; events at the edge of fatality coverage in 2024 and
+2025 cannot be coded; and three events lack a full twelve-month follow-up. The 50 per cent threshold attenuates the predictive association
 materially, so the outcome definition is load-bearing for the one positive signal
 we observe.
 
